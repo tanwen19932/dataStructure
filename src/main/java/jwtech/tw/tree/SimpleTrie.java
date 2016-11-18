@@ -4,51 +4,24 @@ package jwtech.tw.tree;
  * @author TW
  * @date Administrator on 2016/11/16.
  */
-enum NodeKind{LN,BN};
-/**
- * Trie结点
- */
-class TrieNode{
+class SimpleBranNode
+        extends TrieNode{
 
-    char key;
-    TrieNode[] points=null;
-    NodeKind kind=null;
-}
-/**
- * Trie叶子结点
- */
-class LeafNode extends TrieNode{
 
-    LeafNode(char k){
-        super.key=k;
-        super.kind=NodeKind.LN;
-    }
 }
-/**
- * Trie内部结点
- */
-class BranchNode extends TrieNode{
 
-    BranchNode(char k){
-        super.key=k;
-        super.kind=NodeKind.BN;
-        super.points=new TrieNode[27];
-    }
-}
 /**
  * Trie树
  * @author heartraid
  */
-public class StandardTrie {
-
-    private TrieNode root=new BranchNode(' ');
+public class SimpleTrie {
+    private TrieNode root=new SimpleBranNode();
 
     /**
      * 想Tire中插入字符串
      */
     public void insert(String word){
 
-        //System.out.println("插入字符串："+word);
         //从根结点出发
         TrieNode curNode=root;
         //为了满足字符串集合X中不存在一个串是另外一个串的前缀
@@ -59,19 +32,19 @@ public class StandardTrie {
         for(int i=0;i<chars.length;i++){
             //System.out.println("   插入"+chars[i]);
             if(chars[i]=='$'){
-                curNode.points[26]=new LeafNode('$');
+                curNode.points.toArray()[26]=new LeafNode('$');
                 //  System.out.println("   插入完毕,使当前结点"+curNode.key+"的第26孩子指针指向字符：$");
             }
             else{
                 int pSize=chars[i]-'a';
-                if(curNode.points[pSize]==null){
-                    curNode.points[pSize]=new BranchNode(chars[i]);
+                if(curNode.points.toArray()[pSize]==null){
+                    curNode.points.toArray()[pSize]=new EnBranchNode(chars[i]);
                     //  System.out.println("   使当前结点"+curNode.key+"的第"+pSize+"孩子指针指向字符: "+chars[i]);
-                    curNode=curNode.points[pSize];
+                    curNode= (TrieNode) curNode.points.toArray()[pSize];
                 }
                 else{
                     //  System.out.println("   不插入，找到当前结点"+curNode.key+"的第"+pSize+"孩子指针已经指向字符: "+chars[i]);
-                    curNode=curNode.points[pSize];
+                    curNode= (TrieNode) curNode.points.toArray()[pSize];
                 }
             }
         }
@@ -94,11 +67,11 @@ public class StandardTrie {
             }else{
                 System.out.print(chars[i]+" -> ");
                 int pSize=chars[i]-'a';
-                if(curNode.points[pSize]==null){
+                if(curNode.points.toArray()[pSize]==null){
                     //  System.out.println(" 【失败】");
                     return false;
                 }else{
-                    curNode=curNode.points[pSize];
+                    curNode= (TrieNode) curNode.points.toArray()[pSize];
                 }
             }
         }
