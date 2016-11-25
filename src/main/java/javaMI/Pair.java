@@ -65,4 +65,8 @@ public class Pair<T,U> {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return a + ","+ b;
+    }
 }

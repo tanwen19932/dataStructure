@@ -13,7 +13,6 @@ public abstract class Text {
         this.text = text;
     }
 
-
     public String getLanguageCode() {
         return languageCode;
     }
