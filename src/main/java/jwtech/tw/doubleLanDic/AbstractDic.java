@@ -20,8 +20,6 @@ public abstract class AbstractDic
 
     static Map<String, Set<String>> dicMap = new ConcurrentHashMap<>();
     String dicFilePath = null;
-
-
     private AbstractDic() {
         try {
             addDicFile(dicFilePath);
@@ -65,7 +63,7 @@ public abstract class AbstractDic
                     String ja = line.split("\\|")[0].trim();
                     String zhs = line.split("\\|")[1].trim();
                     Set<String> set = new TreeSet<>();
-                    for (String zh : zhs.split("\\p{Punct}")) {
+                    for (String zh : zhs.split("[\\p{Punct} ；：;:'\"]")) {
                         if (zh.trim().length() > 0)
                             set.add(zh.trim());
                     }
