@@ -1,4 +1,5 @@
-package jwtech.tw.tree.trie.dat;/*
+package jwtech.tw.tree.trie.dat;
+/*
  * Name:   Double Array Trie  
  * Author: Yaguang Ding  
  * Mail: dingyaguang117@gmail.com  
@@ -12,7 +13,7 @@ package jwtech.tw.tree.trie.dat;/*
 import java.util.ArrayList;  
 import java.util.HashMap;  
 import java.util.Map;  
-import java.util.Arrays;  
+import java.util.Arrays;
 
 public class DoubleArrayTrie {  
     final char END_CHAR = '\0';  
@@ -31,11 +32,11 @@ public class DoubleArrayTrie {
         CharMap.put(END_CHAR,1);  
         CharList.add(END_CHAR);  
         CharList.add(END_CHAR);  
-        for(int i=0;i<26;++i)  
-        {  
-            CharMap.put((char)('a'+i),CharMap.size()+1);  
-            CharList.add((char)('a'+i));  
-        }  
+        //for(int i=0;i<26;++i)
+        //{
+        //    CharMap.put((char)('a'+i),CharMap.size()+1);
+        //    CharList.add((char)('a'+i));
+        //}
 
     }  
     private void Extend_Array()  
@@ -128,8 +129,7 @@ public class DoubleArrayTrie {
     public void Insert(String s) throws Exception  
     {  
         s += END_CHAR;  
-
-        int pre_p = 1;  
+        int pre_p = 1;
         int cur_p;  
         for(int i=0; i<s.length(); ++i)  
         {  
@@ -256,22 +256,22 @@ public class DoubleArrayTrie {
     public boolean Exists(String word)  
     {  
         int pre_p = 1;  
-        int cur_p = 0;  
+        int cur_p = 0;
 
-        for(int i=0;i<word.length();++i)  
-        {  
-            cur_p = Base[pre_p]+GetCharCode(word.charAt(i));  
-            if(Check[cur_p] != pre_p) return false;  
-            if(Base[cur_p] < 0)  
-            {  
-                if(TailMatchString(-Base[cur_p],word.substring(i+1)))  
-                    return true;  
-                return false;  
-            }  
-            pre_p = cur_p;  
-        }  
-        if(Check[Base[cur_p]+GetCharCode(END_CHAR)] == cur_p)  
-            return true;  
+        for(int i=0;i<word.length();++i)
+        {
+            cur_p = Base[pre_p]+GetCharCode(word.charAt(i));
+            if(Check[cur_p] != pre_p) return false;
+            if(Base[cur_p] < 0)
+            {
+                if(TailMatchString(-Base[cur_p],word.substring(i+1)))
+                    return true;
+                return false;
+            }
+            pre_p = cur_p;
+        }
+        if(Check[Base[cur_p]+GetCharCode(END_CHAR)] == cur_p)
+            return true;
         return false;  
     }  
 
