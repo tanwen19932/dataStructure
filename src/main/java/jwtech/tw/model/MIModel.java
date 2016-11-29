@@ -8,9 +8,7 @@ import jwtech.tw.tree.trie.dat.DoubleArrayTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -25,6 +23,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class MIModel {
     private static Logger LOG = LoggerFactory.getLogger(MIModel.class);
+    private static final String dicDir = "/Users/TW/ja_all/ja_dic";
+    private static final String docsDir = "/Users/TW/ja_all/ja_docs";
+    private static final String wordsDir = "/Users/TW/ja_all/ja_words";
 
     public String[] getHighMIPair(Set<String> words1, Set<String> words2) {
         double max = 0;
@@ -59,39 +60,165 @@ public class MIModel {
         double result = 0;
         return 0;
     }
-    public static void trainFromFile3(String filePath, String savePath) throws IOException{
-        darts.DoubleArrayTrie totalTrie= new darts.DoubleArrayTrie();
+
+
+    //模型训练
+    public static void step1(String filePath, String savePath) throws IOException {
+        //存储字典
+        darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
         Set<String> words = new TreeSet<>();
         BufferedReader br = Files.newReader(new File(filePath), Charset.forName("utf-8"));
         String line;
         int lineNum = 0;
         while ((line = br.readLine()) != null) {
             lineNum++;
-            //if (lineNum == 10000) break;
+            LOG.info("初始化所有word 读取到行数：" + lineNum);
             if (line.trim().length() == 0) {
                 break;
             }
-            //Set<String> docSet = new TreeSet<>();
-            //Set<String> docWords = new TreeSet<>();
             String[] pairs = line.split("\t");
             for (String pair : pairs) {
                 String key = pair.split(" ")[0];
-                //docWords.add(key);
                 words.add(key);
-                //docSet.add(key);
             }
-
-            //DoubleArrayTrie trie = new DoubleArrayTrie();
-            //trie.build(Lists.newArrayList( docWords.toArray(new String[docWords.size()])));
-            //docs.add(trie);
         }
         br.close();
-        String[] wordsA =  words.toArray(new String[words.size()]);
-        totalTrie.build((Lists.newArrayList(wordsA)));
-        List<Set<Integer>> docs = new ArrayList<>();
-        br = Files.newReader(new File(filePath), Charset.forName("utf-8"));
+        String[] wordsA = words.toArray(new String[words.size()]);
+        totalTrie.build(Lists.newArrayList(wordsA));
+
+
+        totalTrie.save(dicDir);
+    }
+
+    public static void step2(String filePath) throws IOException {
+        darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
+        totalTrie.open(dicDir);
+        BufferedReader br = Files.newReader(new File(filePath), Charset.forName("utf-8"));
+        List<String> docs = new ArrayList<>();
+        Set<String> words = new TreeSet<>();
+
+        String line;
+        int lineNum = 0;
         while ((line = br.readLine()) != null) {
             lineNum++;
+            LOG.info("初始化所有doc信息 读取到行数：" + lineNum);
+            if (line.trim().length() == 0) {
+                break;
+            }
+            Set<Integer> bitSet = new TreeSet<>();
+            String[] pairs = line.split("\t");
+            for (String pair : pairs) {
+                String key = pair.split(" ")[0];
+                bitSet.add(totalTrie.exactMatchSearch(key));
+                words.add(key);
+            }
+            line = line.replaceAll("\\d", "");
+            docs.add(line);
+        }
+        br.close();
+        String[] wordsA = words.toArray(new String[words.size()]);
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(wordsDir));
+        oos.writeObject(wordsA);
+        oos.close();
+        oos = new ObjectOutputStream(new FileOutputStream(docsDir));
+        oos.writeObject(docs);
+        oos.close();
+
+    }
+
+    public static void step3(String savePath) throws IOException, ClassNotFoundException {
+        darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
+        totalTrie.open(dicDir);
+        ObjectInputStream ois2 = new ObjectInputStream(new FileInputStream(wordsDir));
+        String[] wordsA = (String[]) ois2.readObject();
+        ois2.close();
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(docsDir));
+        List<String> docsStr = (List<String>) ois.readObject();
+        ois.close();
+        List<Set<Integer>> docs = new ArrayList<>();
+        for (String docStr : docsStr) {
+            Set<Integer> doc = new TreeSet<>();
+            for (String word : docStr.split("\\s")) {
+                if (word.trim().length() > 0) {
+                    doc.add(totalTrie.exactMatchSearch(word.trim()));
+                }
+            }
+            docs.add(doc);
+        }
+
+        System.gc();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        for(String word : wordsA){
+            System.out.println(totalTrie.exactMatchSearch(word));
+        }
+        DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
+        for (int i = 0; i < wordsA.length; i++) {
+            List<double[][]> doubles = new ArrayList<>(wordsA.length - i);
+            for (int j = 0; j < wordsA.length - i; j++) {
+                doubles.add(new double[2][2]);
+            }
+            int rightNowDoc = 0;
+            for (Set<Integer> doc : docs) {
+                rightNowDoc++;
+                LOG.info("当前运行到第{}个词 第{}个文档",i,rightNowDoc);
+
+                if (doc.contains(1)) {
+                    for (int j = 0; j < doubles.size(); j++) {
+                        doubles.get(j)[1][0] +=1;
+                    }
+                    for (Integer wordId : doc) {
+                        if (wordId < i) doc.remove(new Integer(i));
+                        else if(wordId >i){
+                            doubles.get(wordId-i)[1][1] += 1;
+                            doubles.get(wordId-i)[1][0] -= 1;
+                        }
+                    }
+
+                } else {
+                    for (int j = 0; j < doubles.size(); j++) {
+                        doubles.get(j)[0][0] +=1;
+                    }
+                    for (Integer wordId : doc) {
+                        if (wordId < i) doc.remove(new Integer(i));
+                        else if(wordId >i){
+                            doubles.get(wordId-i)[0][1] += 1;
+                            doubles.get(wordId-i)[0][0] -= 1;
+                        }
+                    }
+                }
+            }
+            LOG.info("遍历花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            for (int j = 0; j < doubles.size(); j++) {
+                StringBuilder sb = new StringBuilder();
+                double[][] values = doubles.get(j);
+                stopwatch.reset().start();
+                stopwatch.reset().start();
+                double mi = MI.MI(values);
+                sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
+                        .append("\t").append(df.format(mi))
+                        .append("\r\n");
+                Files.append(sb, new File(savePath), Charset.defaultCharset());
+                LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+            }
+        }
+    }
+
+
+    public static void step4() {}
+
+    public static void trainFromFile3(String filePath, String savePath) throws IOException {
+        darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
+        totalTrie.open(dicDir);
+        Set<String> words = new TreeSet<>();
+        BufferedReader br = Files.newReader(new File(filePath), Charset.forName("utf-8"));
+        List<Set<Integer>> docs = new ArrayList<>();
+
+        String line;
+        int lineNum = 0;
+        while ((line = br.readLine()) != null) {
+            lineNum++;
+            LOG.info("初始化所有doc信息 读取到行数：" + lineNum);
             if (line.trim().length() == 0) {
                 break;
             }
@@ -100,9 +227,15 @@ public class MIModel {
             for (String pair : pairs) {
                 String key = pair.split(" ")[0];
                 doc.add(totalTrie.exactMatchSearch(key));
+                words.add(key);
             }
             doc.remove(new Integer(-1));
             docs.add(doc);
+        }
+        br.close();
+        String[] wordsA = words.toArray(new String[words.size()]);
+        for (String w : wordsA) {
+            System.out.println(totalTrie.exactMatchSearch(w));
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -116,22 +249,27 @@ public class MIModel {
                     int x = 0;
                     int y = 0;
                     try {
-                        if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) x = 1;
-                    }catch (Exception e){
+                        if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) {
+                            x = 1;
+                        }
+                    } catch (Exception e) {
                     }
                     try {
-                        if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) y = 1;
-                    }catch (Exception e){
+                        if (doc.contains(totalTrie.exactMatchSearch(wordsA[j]))) {
+                            y = 1;
+                        }
+                    } catch (Exception e) {
                     }
                     values[x][y] += 1;
                 }
                 LOG.info("遍历花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 stopwatch.reset().start();
+                double mi = MI.MI(values);
                 sb.append(wordsA[i]).append("\t").append(wordsA[j])
-                        .append("\t").append(df.format(MI.MI(values)))
+                        .append("\t").append(df.format(mi))
                         .append("\r\n");
                 Files.append(sb, new File(savePath), Charset.defaultCharset());
-                LOG.info("处理到 {}-> {}  word:{}-- {}  耗时：{}", i, j, wordsA[i], wordsA[j], stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j, wordsA[i], wordsA[j], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
             }
         }
     }
@@ -155,7 +293,7 @@ public class MIModel {
             String[] pairs = line.split("\t");
             for (String pair : pairs) {
                 String key = pair.split(" ")[0];
-                if(!datTrie.Exists(key)){
+                if (!datTrie.Exists(key)) {
                     totalWordSize++;
                     try {
                         datTrie.Insert(key);
@@ -174,7 +312,7 @@ public class MIModel {
         StringBuilder sb = new StringBuilder();
         DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
         Stopwatch stopwatch = Stopwatch.createStarted();
-        for(Set<String> doc : allDoc){
+        for (Set<String> doc : allDoc) {
             String[] wordsA = doc.toArray(new String[doc.size()]);
             for (int i = 0; i < wordsA.length; i++) {
                 for (int j = i + 1; j < wordsA.length; j++) {
@@ -222,11 +360,11 @@ public class MIModel {
                 break;
             }
             //Set<String> docSet = new TreeSet<>();
-            DoubleArrayTrie arrayTrie= new DoubleArrayTrie();
+            DoubleArrayTrie arrayTrie = new DoubleArrayTrie();
             String[] pairs = line.split("\t");
             for (String pair : pairs) {
                 String key = pair.split(" ")[0];
-                if(arrayTrie.Exists(key)){
+                if (arrayTrie.Exists(key)) {
                     try {
                         arrayTrie.Insert(key);
                     } catch (Exception e) {
@@ -255,11 +393,11 @@ public class MIModel {
                     int y = 0;
                     try {
                         if (doc.Exists(wordsA[i])) x = 1;
-                    }catch (Exception e){
+                    } catch (Exception e) {
                     }
                     try {
                         if (doc.Exists(wordsA[j])) y = 1;
-                    }catch (Exception e){
+                    } catch (Exception e) {
                     }
                     values[x][y] += 1;
                 }
@@ -275,8 +413,10 @@ public class MIModel {
     }
 
     public static void main(String[] args)
-            throws IOException {
-        trainFromFile3("/Users/TW/ja_all/all", "/Users/TW/ja_all/ja_mi");
+            throws IOException, ClassNotFoundException {
+        //trainFromFile3("/Users/TW/ja_all/all", "/Users/TW/ja_all/ja_mi");
+        //step2("/Users/TW/ja_all/all");
+        step3("/Users/TW/ja_all/ja_mi");
         //System.out.println(TF_IDF.class.getResource( "/0" ));
         //System.out.println(TF_IDF.class.getClassLoader().getResource( "conf/0" ));
     }
