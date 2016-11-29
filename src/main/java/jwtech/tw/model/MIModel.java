@@ -11,10 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -137,73 +134,155 @@ public class MIModel {
         ois.close();
         List<Set<Integer>> docs = new ArrayList<>();
         for (String docStr : docsStr) {
-            Set<Integer> doc = new TreeSet<>();
+            Set<Integer> doc = new HashSet<>();
             for (String word : docStr.split("\\s")) {
                 if (word.trim().length() > 0) {
                     doc.add(totalTrie.exactMatchSearch(word.trim()));
                 }
             }
+            doc.remove(new Integer(-1));
             docs.add(doc);
         }
 
         System.gc();
         Stopwatch stopwatch = Stopwatch.createStarted();
-        for(String word : wordsA){
+        for (String word : wordsA) {
             System.out.println(totalTrie.exactMatchSearch(word));
         }
         DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
         for (int i = 0; i < wordsA.length; i++) {
-            List<double[][]> doubles = new ArrayList<>(wordsA.length - i);
-            for (int j = 0; j < wordsA.length - i; j++) {
+            LOG.info("开始导入第{}个词 ！",i);
+            List<double[][]> doubles = new ArrayList<>(wordsA.length - i - 1);
+            for (int j = 0; j < wordsA.length - i - 1; j++) {
                 doubles.add(new double[2][2]);
             }
             int rightNowDoc = 0;
-            for (Set<Integer> doc : docs) {
+            int i_10 = 0;
+            int i_00 = 0;
+            Iterator<Set<Integer>> docInt = docs.iterator();
+            while (docInt.hasNext()) {
+                Set<Integer> doc = docInt.next();
                 rightNowDoc++;
-                LOG.info("当前运行到第{}个词 第{}个文档",i,rightNowDoc);
-
-                if (doc.contains(1)) {
-                    for (int j = 0; j < doubles.size(); j++) {
-                        doubles.get(j)[1][0] +=1;
-                    }
-                    for (Integer wordId : doc) {
-                        if (wordId < i) doc.remove(new Integer(i));
-                        else if(wordId >i){
-                            doubles.get(wordId-i)[1][1] += 1;
-                            doubles.get(wordId-i)[1][0] -= 1;
+                LOG.debug("当前运行到第{}个词 第{}个文档", i, rightNowDoc);
+                if (doc.contains(i)) {
+                    i_10++;
+                    Iterator<Integer> iterator = doc.iterator();
+                    while (iterator.hasNext()){
+                        Integer wordId = iterator.next();
+                        if (wordId < i) iterator.remove();
+                        else if (wordId > i) {
+                            doubles.get(wordId - i - 1)[1][1] += 1;
+                            doubles.get(wordId - i - 1)[1][0] -= 1;
                         }
                     }
 
                 } else {
-                    for (int j = 0; j < doubles.size(); j++) {
-                        doubles.get(j)[0][0] +=1;
-                    }
-                    for (Integer wordId : doc) {
-                        if (wordId < i) doc.remove(new Integer(i));
-                        else if(wordId >i){
-                            doubles.get(wordId-i)[0][1] += 1;
-                            doubles.get(wordId-i)[0][0] -= 1;
+                    i_00++;
+                    Iterator<Integer> iterator = doc.iterator();
+                    while (iterator.hasNext()){
+                        Integer wordId = iterator.next();
+                        if (wordId < i) iterator.remove();
+                        else if (wordId > i) {
+                            doubles.get(wordId - i - 1)[0][1] += 1;
+                            doubles.get(wordId - i - 1)[0][0] -= 1;
                         }
                     }
                 }
             }
+            for (int j = 0; j < doubles.size(); j++) {
+                doubles.get(j)[1][0] += i_10;
+            }
+            for (int j = 0; j < doubles.size(); j++) {
+                doubles.get(j)[0][0] += i_00;
+            }
             LOG.info("遍历花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            stopwatch.reset().start();
             for (int j = 0; j < doubles.size(); j++) {
                 StringBuilder sb = new StringBuilder();
                 double[][] values = doubles.get(j);
-                stopwatch.reset().start();
-                stopwatch.reset().start();
                 double mi = MI.MI(values);
                 sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
                         .append("\t").append(df.format(mi))
                         .append("\r\n");
                 Files.append(sb, new File(savePath), Charset.defaultCharset());
-                LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
+                //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
             }
+            LOG.info("计算MI花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }
     }
-
+    //public static void step3_2(String savePath) throws IOException, ClassNotFoundException {
+    //    darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
+    //    totalTrie.open(dicDir);
+    //    ObjectInputStream ois2 = new ObjectInputStream(new FileInputStream(wordsDir));
+    //    String[] wordsA = (String[]) ois2.readObject();
+    //    ois2.close();
+    //    ObjectInputStream ois = new ObjectInputStream(new FileInputStream(docsDir));
+    //    List<String> docsStr = (List<String>) ois.readObject();
+    //    ois.close();
+    //    List<BitSet> docs = new ArrayList<>();
+    //    for (String docStr : docsStr) {
+    //        BitSet doc = new BitSet();
+    //        for (String word : docStr.split("\\s")) {
+    //            if (word.trim().length() > 0) {
+    //                doc.set(totalTrie.exactMatchSearch(word.trim()));
+    //            }
+    //        }
+    //        docs.add(doc);
+    //    }
+    //    System.gc();
+    //    Stopwatch stopwatch = Stopwatch.createStarted();
+    //    DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
+    //    for (int i = 0; i < wordsA.length; i++) {
+    //        List<double[][]> doubles = new ArrayList<>(wordsA.length - i);
+    //        for (int j = 0; j < wordsA.length - i; j++) {
+    //            doubles.add(new double[2][2]);
+    //        }
+    //        int rightNowDoc = 0;
+    //        for (BitSet doc : docs) {
+    //            rightNowDoc++;
+    //            LOG.info("当前运行到第{}个词 第{}个文档",i,rightNowDoc);
+    //
+    //            if (doc.get(i)) {
+    //                for (int j = 0; j < doubles.size(); j++) {
+    //                    doubles.get(j)[1][0] +=1;
+    //                }
+    //                for (Integer wordId : doc.) {
+    //                    if (wordId < i) doc.remove(new Integer(i));
+    //                    else if(wordId >i){
+    //                        doubles.get(wordId-i)[1][1] += 1;
+    //                        doubles.get(wordId-i)[1][0] -= 1;
+    //                    }
+    //                }
+    //
+    //            } else {
+    //                for (int j = 0; j < doubles.size(); j++) {
+    //                    doubles.get(j)[0][0] +=1;
+    //                }
+    //                for (Integer wordId : doc) {
+    //                    if (wordId < i) doc.remove(new Integer(i));
+    //                    else if(wordId >i){
+    //                        doubles.get(wordId-i)[0][1] += 1;
+    //                        doubles.get(wordId-i)[0][0] -= 1;
+    //                    }
+    //                }
+    //            }
+    //        }
+    //        LOG.info("遍历花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    //        for (int j = 0; j < doubles.size(); j++) {
+    //            StringBuilder sb = new StringBuilder();
+    //            double[][] values = doubles.get(j);
+    //            stopwatch.reset().start();
+    //            stopwatch.reset().start();
+    //            double mi = MI.MI(values);
+    //            sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
+    //                    .append("\t").append(df.format(mi))
+    //                    .append("\r\n");
+    //            Files.append(sb, new File(savePath), Charset.defaultCharset());
+    //            LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    //
+    //        }
+    //    }
+    //}
 
     public static void step4() {}
 
