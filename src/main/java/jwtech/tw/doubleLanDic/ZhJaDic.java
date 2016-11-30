@@ -20,7 +20,7 @@ public class ZhJaDic
         }
     }
 
-    public static Dic GetInstance() {
+    public static Dic getInstance() {
         if (instance == null) {
             init();
         }
@@ -31,6 +31,7 @@ public class ZhJaDic
         super("data/dic/ja_zh.txt");
     }
 
+
     @Override
     public void addDicFile(File file) {
         try {
@@ -38,9 +39,11 @@ public class ZhJaDic
                 try {
                     String ja = line.split("\\|")[0].trim();
                     String zhs = line.split("\\|")[1].trim();
-                    for (String zh : zhs.split("\\p{Punct}")) {
-                        if (zh.trim().length() > 0)
-                        addPair(zh, ja);
+                    for (String zh : zhs.split("[\\p{Punct} ；：;:'\"]")) {
+                        if (zh.trim().length() > 0){
+                            zh= zh.replaceAll("[\\(（].*?[）\\)]","").replaceAll("\\s*","").trim();
+                            addPair(zh, ja);
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

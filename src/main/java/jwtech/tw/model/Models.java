@@ -7,9 +7,9 @@ package jwtech.tw.model;
  */
 public class Models {
     public static TF_IDFModel getTF_IDFModel(){
-        return null;
+        return TF_IDFModel.getInstance();
     }
     public static MIModel getMIModel(){
-        return null;
+        return MIModel.getInstance();
     }
 }

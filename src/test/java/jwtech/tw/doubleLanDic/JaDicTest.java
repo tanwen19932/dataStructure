@@ -12,7 +12,7 @@ public class JaDicTest
         extends TestCase {
     public void testGetTransWord()
             throws Exception {
-        Set<String> words = JaZhDic.GetInstance().getTransWordSet( "ああ" );
+        Set<String> words = JaZhDic.getInstance().getTransWordSet( "ああ" );
         for(String word :words){
             System.out.println(word);
         }

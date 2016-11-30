@@ -24,7 +24,7 @@ public class TranslaterJa extends Translater {
     private static Logger LOG = LoggerFactory.getLogger(TranslaterJa.class);
 
     public TranslaterJa() {
-        dicFrom = ZhJaDic.GetInstance();
+        dicFrom = ZhJaDic.getInstance();
     }
 
     @Override
@@ -33,12 +33,12 @@ public class TranslaterJa extends Translater {
         if (result.size() == 0) {
             return null;
         } else if (result.size() == 1) {
-            return getSingleTransWord(result.toString());
+            return getSingleTransWord(result.toStringWithOutNature(""));
         } else {
             try {
                 return getMulitWordTrans(result.getTerms().stream().map(temp -> temp.getName()).collect(Collectors.toList()));
             } catch (Exception e) {
-                return text;
+                return getSingleTransWord(result.toStringWithOutNature(""));
             }
         }
     }
@@ -50,13 +50,14 @@ public class TranslaterJa extends Translater {
         try {
             Preconditions.checkNotNull(wordSet);
         } catch (Exception e) {
-            LOG.error("{} 未找到合适词对 用原词作为翻译 ",word);
+            LOG.error("{} 未找到合适词 用原词作为翻译 ",word);
             return word;
         }
-        double max = 0;
+        double max = -1;
         for (String temp : wordSet) {
-            if (tf_idfModel.getWordTF_IDF(temp) > max) {
-                max = tf_idfModel.getWordTF_IDF(temp);
+            double tempTF_IDF = tf_idfModel.getWordTF_IDF(temp);
+            if ( tempTF_IDF> max) {
+                max =tempTF_IDF;
                 result = temp;
             }
         }
@@ -70,11 +71,12 @@ public class TranslaterJa extends Translater {
         String[] wordsArray = (String[]) words.toArray(new String[words.size()]);
         String word = wordsArray[0];
         String word2 = wordsArray[1];
-        String[] pair = new String[2];
+        String[] pair ;
         try {
             pair = miModel.getHighMIPair(dicFrom.getTransWordSet(word), dicFrom.getTransWordSet(word2));
         } catch (Exception e) {
             LOG.error("中文组：{} {} 获得翻译词串错误逐个单词翻译",word,word2);
+            pair =  new String[2];
             pair[0] = getSingleTransWord(word);
             pair[1] = getSingleTransWord(word2);
         }
@@ -82,11 +84,12 @@ public class TranslaterJa extends Translater {
         sb.append(pair[0]);
         sb.append(pair[1]);
         for (int i = 2; i < wordsArray.length; i++) {
-            String[] pair2 = new String[0];
+            String[] pair2;
             try {
                 pair2 = miModel.getHighMIPair(lastTransWord, dicFrom.getTransWordSet(wordsArray[i]));
             } catch (Exception e) {
                 LOG.error("{} 与中文：{} 未找到合适MI信息 按照单个词翻译 ",lastTransWord,wordsArray[i]);
+                pair2 =  new String[2];
                 pair2[1] = getSingleTransWord(word2);
             }
             sb.append(pair2[1]);

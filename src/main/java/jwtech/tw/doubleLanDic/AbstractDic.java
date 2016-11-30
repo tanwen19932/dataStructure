@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractDic
         implements Dic {
     private static Logger LOG = LoggerFactory.getLogger(AbstractDic.class);
-    static Map<String, Set<String>> dicMap = new ConcurrentHashMap<>();
+    Map<String, Set<String>> dicMap = new ConcurrentHashMap<>();
     String dicFilePath = null;
     private AbstractDic() {
         try {

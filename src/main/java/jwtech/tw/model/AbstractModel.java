@@ -21,7 +21,7 @@ public abstract class AbstractModel {
         String line;
         int lineNum = 0;
         while ((line = br.readLine()) != null) {
-            LOG.info("读取到：第"+lineNum);
+            LOG.debug("读取到：第"+lineNum);
             if(line.trim().length()==0) continue;
             handleLine(line);
         }

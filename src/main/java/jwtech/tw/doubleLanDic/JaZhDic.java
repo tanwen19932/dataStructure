@@ -12,7 +12,7 @@ public class JaZhDic
             instance = new JaZhDic();
         }
     }
-    public static Dic GetInstance() {
+    public static Dic getInstance() {
         if (instance == null) {
             init();
         }

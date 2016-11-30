@@ -27,24 +27,25 @@ public class MIModel extends AbstractModel {
     private static final String docsDir = "data/mi/ja_docs";
     private static final String wordsDir = "data/mi/ja_words";
     private static final String miModelDir = "data/mi/ja_mi";
-    private static Map<String, Double> wordMIMap;
+    private static Map<String, Double> wordMIMap = new HashMap<>();
     private static MIModel instance;
 
     private MIModel() {
         try {
             loadFromFile(miModelDir);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("初始化模型失败 检测路径:{}",miModelDir);
         }
     }
 
     public static synchronized void init() {
         if (instance == null) {
             instance = new MIModel();
+            LOG.info("初始化MI模型完毕！");
         }
     }
 
-    public static MIModel GetInstance() {
+    public static MIModel getInstance() {
         if (instance == null) {
             init();
         }
@@ -53,7 +54,7 @@ public class MIModel extends AbstractModel {
 
     public String[] getHighMIPair(Set<String> words1, Set<String> words2) throws Exception {
         Preconditions.checkArgument(words1 != null && words2 != null && words1.size() > 0 && words2.size() > 0, "传入的单词至少有一个为空");
-        double max = 0;
+        double max = -1;
         String[] result = new String[2];
         for (String word1 : words1) {
             for (String word2 : words2) {
@@ -69,7 +70,7 @@ public class MIModel extends AbstractModel {
 
     public String[] getHighMIPair(String word1, Set<String> words2) throws Exception {
         Preconditions.checkArgument(word1 != null && words2 != null && words2.size() > 0, "传入的单词至少有一个为空");
-        double max = 0;
+        double max = -1;
         String[] result = new String[2];
         for (String word2 : words2) {
             if (getMI(word1, word2) > max) {

@@ -9,8 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * @author TW
@@ -18,7 +18,7 @@ import java.util.TreeMap;
  */
 public class TF_IDFModel extends AbstractModel {
     private static final String modelPath = "data/mi/ja_tfidf";
-    Map<String, Double> wordTFIDFMap = new TreeMap<>();
+    Map<String, Double> wordTFIDFMap = new HashMap<>();
     private static Logger LOG = LoggerFactory.getLogger(TF_IDFModel.class);
     private static TF_IDFModel instance;
 
@@ -26,18 +26,18 @@ public class TF_IDFModel extends AbstractModel {
         try {
             loadFromFile(modelPath);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("初始化模型失败 检测路径:{}",modelPath);
         }
     }
 
     public static synchronized void init() {
         if (instance == null) {
             instance = new TF_IDFModel();
-
+            LOG.info("初始化TF_IDF模型完毕！");
         }
     }
 
-    public static TF_IDFModel GetInstance() {
+    public static TF_IDFModel getInstance() {
         if (instance == null) {
             init();
         }
@@ -105,7 +105,7 @@ public class TF_IDFModel extends AbstractModel {
 
     public static void main(String[] args)
             throws IOException {
-        System.out.println(TF_IDFModel.GetInstance().getWordTF_IDF("ぁと"));
+        System.out.println(TF_IDFModel.getInstance().getWordTF_IDF("ぁと"));
         //trainFromFile( "/Users/TW/ja_all/all","/Users/TW/ja_all/ja_tfidf" );
 
         //System.out.println(TF_IDF.class.getResource( "/0" ));

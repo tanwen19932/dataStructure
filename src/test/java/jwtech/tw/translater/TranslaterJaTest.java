@@ -9,12 +9,12 @@ import junit.framework.TestCase;
 public class TranslaterJaTest extends TestCase {
     public void testGetSingleTransWord() throws Exception {
         TranslaterJa translaterJa = new TranslaterJa();
-        System.out.println(translaterJa.trans("天哪"));
+        System.out.println( translaterJa.trans("肥沃") );
     }
 
     public void testGetMulitWordTrans() throws Exception {
         TranslaterJa translaterJa = new TranslaterJa();
-        System.out.println( translaterJa.trans("这是我的问题") );
+        System.out.println(translaterJa.trans("肥沃的土地"));
     }
 
 }
