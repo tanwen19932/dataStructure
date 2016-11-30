@@ -34,7 +34,7 @@ public class MIModel extends AbstractModel {
         try {
             loadFromFile(miModelDir);
         } catch (IOException e) {
-            LOG.error("初始化模型失败 检测路径:{}",miModelDir);
+            LOG.error("初始化模型失败 检测路径:{}", miModelDir);
         }
     }
 
@@ -184,7 +184,6 @@ public class MIModel extends AbstractModel {
         for (String word : wordsA) {
             System.out.println(totalTrie.exactMatchSearch(word));
         }
-        int thread = 64;
         class wordMICal implements Callable<Boolean> {
             private int i;
 
@@ -237,13 +236,13 @@ public class MIModel extends AbstractModel {
                     StringBuilder sb = new StringBuilder();
                     double[][] values = doubles.get(j);
                     double mi = MI.MI(values);
-                    if (mi <= 0.00000000) {
+                    if (mi ==0) {
                         continue;
                     }
-                    sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
-                            .append("\t").append(df.format(mi))
+                    sb.append(j + i + 1)
+                            .append("\t").append(mi)
                             .append("\r\n");
-                    Files.append(sb, new File(savePath + "/" + wordsA[i]), Charset.defaultCharset());
+                    Files.append(sb, new File(savePath + "/" +i), Charset.defaultCharset());
                     //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 }
                 //LOG.info("计算 [{}] MI花费时间： {} ",i, stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -251,12 +250,18 @@ public class MIModel extends AbstractModel {
             }
         }
         int runTimes = 0;
+        int thread = 64;
+        int startWord = 0;
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(thread));
         List<Future<Boolean>> futures = new ArrayList<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         LOG.info("开始导入 0-{} 词", thread);
         for (int i = 0; i < wordsA.length; i++) {
-            futures.add(service.submit(new wordMICal(i)));
+            if (i < startWord) {
+                futures.add(service.submit(() -> true));
+            } else {
+                futures.add(service.submit(new wordMICal(i)));
+            }
             if (i < runTimes * thread + thread) {
             } else {
                 for (Future<Boolean> future : futures) {
@@ -267,7 +272,7 @@ public class MIModel extends AbstractModel {
                     }
 
                 }
-                LOG.info("耗时{} {}-{}个词执行完毕 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), i - thread, i);
+                LOG.info("耗时{}s  {}-{}个词执行完毕 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), i - thread, i);
                 for (Set<Integer> doc : docs) {
                     Iterator<Integer> iterator = doc.iterator();
                     while (iterator.hasNext()) {
@@ -566,7 +571,7 @@ public class MIModel extends AbstractModel {
             throws IOException, ClassNotFoundException {
         //trainFromFile3("/Users/TW/ja_all/all", "/Users/TW/ja_all/ja_mi");
         //step2("/Users/TW/ja_all/all");
-        //System.out.println( 0.0000000<=0.0000000);
+        //System.out.println( 0.0000000==0);
         step3("data/mi/ja_mi");
         //System.out.println(TF_IDF.class.getResource( "/0" ));
         //System.out.println(TF_IDF.class.getClassLoader().getResource( "conf/0" ));
