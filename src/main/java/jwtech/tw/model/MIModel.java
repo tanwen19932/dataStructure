@@ -1,8 +1,11 @@
 package jwtech.tw.model;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import jwtech.tw.algo.MI;
 import jwtech.tw.tree.trie.dat.DoubleArrayTrie;
 import org.slf4j.Logger;
@@ -12,19 +15,44 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author TW
  * @date Administrator on 2016/11/24.
  */
-public class MIModel {
+public class MIModel extends AbstractModel {
     private static Logger LOG = LoggerFactory.getLogger(MIModel.class);
-    private static final String dicDir = "/Users/TW/ja_all/ja_dic";
-    private static final String docsDir = "/Users/TW/ja_all/ja_docs";
-    private static final String wordsDir = "/Users/TW/ja_all/ja_words";
+    private static final String dicDir = "data/mi/ja_dic";
+    private static final String docsDir = "data/mi/ja_docs";
+    private static final String wordsDir = "data/mi/ja_words";
+    private static final String miModelDir = "data/mi/ja_mi";
+    private static Map<String, Double> wordMIMap;
+    private static MIModel instance;
 
-    public String[] getHighMIPair(Set<String> words1, Set<String> words2) {
+    private MIModel() {
+        try {
+            loadFromFile(miModelDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static synchronized void init() {
+        if (instance == null) {
+            instance = new MIModel();
+        }
+    }
+
+    public static MIModel GetInstance() {
+        if (instance == null) {
+            init();
+        }
+        return instance;
+    }
+
+    public String[] getHighMIPair(Set<String> words1, Set<String> words2) throws Exception {
+        Preconditions.checkArgument(words1 != null && words2 != null && words1.size() > 0 && words2.size() > 0, "传入的单词至少有一个为空");
         double max = 0;
         String[] result = new String[2];
         for (String word1 : words1) {
@@ -39,7 +67,8 @@ public class MIModel {
         return result;
     }
 
-    public String[] getHighMIPair(String word1, Set<String> words2) {
+    public String[] getHighMIPair(String word1, Set<String> words2) throws Exception {
+        Preconditions.checkArgument(word1 != null && words2 != null && words2.size() > 0, "传入的单词至少有一个为空");
         double max = 0;
         String[] result = new String[2];
         for (String word2 : words2) {
@@ -52,10 +81,19 @@ public class MIModel {
         return result;
     }
 
-    public double getMI(String word1, String word2) {
-        //TODO qiu mi
-        double result = 0;
+    public double getMI(String word1, String word2) throws Exception {
+        Preconditions.checkArgument(word1 != null && word2 != null, "传入的单词至少有一个为null");
+        String combine = word1.compareTo(word2) < 0 ? word1 + word2 : word2 + word1;
+        if (wordMIMap.containsKey(combine)) {
+            return wordMIMap.get(combine);
+        }
         return 0;
+    }
+
+    @Override
+    public void handleLine(String line) {
+        String[] params = line.split("\t");
+        wordMIMap.put(params[0] + params[1], Double.valueOf(params[2]));
     }
 
 
@@ -82,8 +120,6 @@ public class MIModel {
         br.close();
         String[] wordsA = words.toArray(new String[words.size()]);
         totalTrie.build(Lists.newArrayList(wordsA));
-
-
         totalTrie.save(dicDir);
     }
 
@@ -143,71 +179,105 @@ public class MIModel {
             doc.remove(new Integer(-1));
             docs.add(doc);
         }
-
         System.gc();
-        Stopwatch stopwatch = Stopwatch.createStarted();
         for (String word : wordsA) {
             System.out.println(totalTrie.exactMatchSearch(word));
         }
-        DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
-        for (int i = 0; i < wordsA.length; i++) {
-            LOG.info("开始导入第{}个词 ！",i);
-            List<double[][]> doubles = new ArrayList<>(wordsA.length - i - 1);
-            for (int j = 0; j < wordsA.length - i - 1; j++) {
-                doubles.add(new double[2][2]);
-            }
-            int rightNowDoc = 0;
-            int i_10 = 0;
-            int i_00 = 0;
-            Iterator<Set<Integer>> docInt = docs.iterator();
-            while (docInt.hasNext()) {
-                Set<Integer> doc = docInt.next();
-                rightNowDoc++;
-                LOG.debug("当前运行到第{}个词 第{}个文档", i, rightNowDoc);
-                if (doc.contains(i)) {
-                    i_10++;
-                    Iterator<Integer> iterator = doc.iterator();
-                    while (iterator.hasNext()){
-                        Integer wordId = iterator.next();
-                        if (wordId < i) iterator.remove();
-                        else if (wordId > i) {
-                            doubles.get(wordId - i - 1)[1][1] += 1;
-                            doubles.get(wordId - i - 1)[1][0] -= 1;
-                        }
-                    }
+        int thread = 64;
+        class wordMICal implements Callable<Boolean> {
+            private int i;
 
-                } else {
-                    i_00++;
-                    Iterator<Integer> iterator = doc.iterator();
-                    while (iterator.hasNext()){
-                        Integer wordId = iterator.next();
-                        if (wordId < i) iterator.remove();
-                        else if (wordId > i) {
-                            doubles.get(wordId - i - 1)[0][1] += 1;
-                            doubles.get(wordId - i - 1)[0][0] -= 1;
+            private wordMICal(int i) {
+                this.i = i;
+            }
+
+            @Override
+            public Boolean call() throws Exception {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
+                List<double[][]> doubles = new ArrayList<>(wordsA.length - i - 1);
+                for (int j = 0; j < wordsA.length - i - 1; j++) {
+                    doubles.add(new double[2][2]);
+                }
+                int i_10 = 0;
+                int i_00 = 0;
+                for (Set<Integer> doc : docs) {
+                    //LOG.debug("当前运行到第{}个词 第{}个文档", i, rightNowDoc);
+                    if (doc.contains(i)) {
+                        i_10++;
+                        for (Integer wordId : doc) {
+                            //if (wordId < i) iterator.remove();
+                            if (wordId > i) {
+                                doubles.get(wordId - i - 1)[1][1] += 1;
+                                doubles.get(wordId - i - 1)[1][0] -= 1;
+                            }
+                        }
+
+                    } else {
+                        i_00++;
+                        for (Integer wordId : doc) {
+                            //if (wordId < i) iterator.remove();
+                            if (wordId > i) {
+                                doubles.get(wordId - i - 1)[0][1] += 1;
+                                doubles.get(wordId - i - 1)[0][0] -= 1;
+                            }
                         }
                     }
                 }
+                for (double[][] aDouble : doubles) {
+                    aDouble[1][0] += i_10;
+                }
+                for (double[][] aDouble : doubles) {
+                    aDouble[0][0] += i_00;
+                }
+                //LOG.info("遍历 [{}] 花费时间： {} ",i, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                stopwatch.reset().start();
+                for (int j = 0; j < doubles.size(); j++) {
+                    StringBuilder sb = new StringBuilder();
+                    double[][] values = doubles.get(j);
+                    double mi = MI.MI(values);
+                    if (mi <= 0.00000000) {
+                        continue;
+                    }
+                    sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
+                            .append("\t").append(df.format(mi))
+                            .append("\r\n");
+                    Files.append(sb, new File(savePath + "/" + wordsA[i]), Charset.defaultCharset());
+                    //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                }
+                //LOG.info("计算 [{}] MI花费时间： {} ",i, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                return true;
             }
-            for (int j = 0; j < doubles.size(); j++) {
-                doubles.get(j)[1][0] += i_10;
+        }
+        int runTimes = 0;
+        ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(thread));
+        List<Future<Boolean>> futures = new ArrayList<>();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        LOG.info("开始导入 0-{} 词", thread);
+        for (int i = 0; i < wordsA.length; i++) {
+            futures.add(service.submit(new wordMICal(i)));
+            if (i < runTimes * thread + thread) {
+            } else {
+                for (Future<Boolean> future : futures) {
+                    try {
+                        future.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        LOG.error("任务出错！", e);
+                    }
+
+                }
+                LOG.info("耗时{} {}-{}个词执行完毕 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), i - thread, i);
+                for (Set<Integer> doc : docs) {
+                    Iterator<Integer> iterator = doc.iterator();
+                    while (iterator.hasNext()) {
+                        Integer wordId = iterator.next();
+                        if (wordId < i) iterator.remove();
+                    }
+                }
+                runTimes++;
+                LOG.info("开始导入第{}-{}个词 ！", i, i + thread);
+                stopwatch.reset().start();
             }
-            for (int j = 0; j < doubles.size(); j++) {
-                doubles.get(j)[0][0] += i_00;
-            }
-            LOG.info("遍历花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-            stopwatch.reset().start();
-            for (int j = 0; j < doubles.size(); j++) {
-                StringBuilder sb = new StringBuilder();
-                double[][] values = doubles.get(j);
-                double mi = MI.MI(values);
-                sb.append(wordsA[i]).append("\t").append(wordsA[j + i + 1])
-                        .append("\t").append(df.format(mi))
-                        .append("\r\n");
-                Files.append(sb, new File(savePath), Charset.defaultCharset());
-                //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
-            }
-            LOG.info("计算MI花费时间： {} ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }
     }
     //public static void step3_2(String savePath) throws IOException, ClassNotFoundException {
@@ -331,13 +401,13 @@ public class MIModel {
                         if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) {
                             x = 1;
                         }
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                     }
                     try {
                         if (doc.contains(totalTrie.exactMatchSearch(wordsA[j]))) {
                             y = 1;
                         }
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                     }
                     values[x][y] += 1;
                 }
@@ -495,9 +565,9 @@ public class MIModel {
             throws IOException, ClassNotFoundException {
         //trainFromFile3("/Users/TW/ja_all/all", "/Users/TW/ja_all/ja_mi");
         //step2("/Users/TW/ja_all/all");
-        step3("/Users/TW/ja_all/ja_mi");
+        //System.out.println( 0.0000000<=0.0000000);
+        step3("data/mi/ja_mi");
         //System.out.println(TF_IDF.class.getResource( "/0" ));
         //System.out.println(TF_IDF.class.getClassLoader().getResource( "conf/0" ));
     }
-
 }

@@ -9,5 +9,5 @@ import jwtech.tw.doubleLanDic.Dic;
 public abstract class Translater {
     Dic dicFrom ;
     Dic dicTo ;
-    public abstract String trans(String text);
+    public abstract String trans(String text) throws Exception;
 }

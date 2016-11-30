@@ -9,7 +9,7 @@ import org.ansj.splitWord.analysis.ToAnalysis;
  */
 public class ZhText extends Text {
 
-    public ZhText(String text) {
+    ZhText(String text) {
         super( "zh", text );
     }
 

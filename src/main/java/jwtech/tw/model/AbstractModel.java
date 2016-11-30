@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
  */
 public abstract class AbstractModel {
     private static Logger LOG = LoggerFactory.getLogger(AbstractModel.class);
+
     public void loadFromFile(String filePath) throws IOException {
         BufferedReader br = Files.newReader(new File(filePath), Charset.forName("utf-8"));
         String line;

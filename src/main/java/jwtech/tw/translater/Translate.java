@@ -6,6 +6,10 @@ package jwtech.tw.translater;
  */
 public class Translate {
     public static String tansFrom2(String lanCodeFrom, String LanCodeTo, String text) {
-        return TranslaterFactory.getTranslater( lanCodeFrom,LanCodeTo ).trans( text );
+        try {
+            return TranslaterFactory.getTranslater(lanCodeFrom, LanCodeTo).trans(text);
+        } catch (Exception e) {
+            return text;
+        }
     }
 }

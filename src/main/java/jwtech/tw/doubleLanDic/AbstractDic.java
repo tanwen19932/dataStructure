@@ -1,6 +1,8 @@
 package jwtech.tw.doubleLanDic;
 
 import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class AbstractDic
         implements Dic {
-
+    private static Logger LOG = LoggerFactory.getLogger(AbstractDic.class);
     static Map<String, Set<String>> dicMap = new ConcurrentHashMap<>();
     String dicFilePath = null;
     private AbstractDic() {
