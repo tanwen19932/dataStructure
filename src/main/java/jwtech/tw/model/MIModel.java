@@ -161,17 +161,22 @@ public class MIModel extends AbstractModel {
     }
 
     public static void step3(String savePath) throws IOException, ClassNotFoundException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        LOG.info(" 开始导入模型------ ");
         darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
         totalTrie.open(dicDir);
+        LOG.info(" 词语Trie模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
         ObjectInputStream ois2 = new ObjectInputStream(new FileInputStream(wordsDir));
         String[] wordsA = (String[]) ois2.readObject();
         ois2.close();
+        LOG.info(" 词语数组[]模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
         ObjectInputStream ois = new ObjectInputStream(new FileInputStream(docsDir));
         List<String> docsStr = (List<String>) ois.readObject();
         ois.close();
+        LOG.info(" 文档模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
         List<Set<Integer>> docs = new ArrayList<>();
         for (String docStr : docsStr) {
-            Set<Integer> doc = new HashSet<>();
+            Set<Integer> doc = new TreeSet<>();
             for (String word : docStr.split("\\s")) {
                 if (word.trim().length() > 0) {
                     doc.add(totalTrie.exactMatchSearch(word.trim()));
@@ -181,107 +186,122 @@ public class MIModel extends AbstractModel {
             docs.add(doc);
         }
         System.gc();
-        for (String word : wordsA) {
-            System.out.println(totalTrie.exactMatchSearch(word));
-        }
+        LOG.info(" 文档模型处理成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
         class wordMICal implements Callable<Boolean> {
             private int i;
+            private int n;
 
-            private wordMICal(int i) {
+            private wordMICal(int i, int n) {
                 this.i = i;
+                this.n = n;
             }
 
             @Override
             public Boolean call() throws Exception {
                 Stopwatch stopwatch = Stopwatch.createStarted();
-                DecimalFormat df = new DecimalFormat("#,##0.00000000");//保留两位小数且不用科学计数法
-                List<double[][]> doubles = new ArrayList<>(wordsA.length - i - 1);
-                for (int j = 0; j < wordsA.length - i - 1; j++) {
-                    doubles.add(new double[2][2]);
+                List<List<double[][]>> i_nWord = new ArrayList<>();
+                //LOG.info("{}- {} 创建新的数组存放doc信息 耗时{}ms ———————— ",i ,i+n,stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                for (int m = i; m < i + n; m++) {
+                    List<double[][]> doubles = new ArrayList<>(wordsA.length - i - 1);
+                    for (int j = 0; j < wordsA.length - m - 1; j++) {
+                        doubles.add(new double[2][2]);
+                    }
+                    i_nWord.add(doubles);
                 }
-                int i_10 = 0;
-                int i_00 = 0;
+                LOG.info("{}- {} 创建存放doc信息数组成功 耗时{}ms ———————— 准备遍历DOCS",i ,i+n,stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                int[] i_10 = new int[n];
+                int[] i_00 = new int[n];
                 for (Set<Integer> doc : docs) {
-                    //LOG.debug("当前运行到第{}个词 第{}个文档", i, rightNowDoc);
-                    if (doc.contains(i)) {
-                        i_10++;
-                        for (Integer wordId : doc) {
-                            //if (wordId < i) iterator.remove();
-                            if (wordId > i) {
-                                doubles.get(wordId - i - 1)[1][1] += 1;
-                                doubles.get(wordId - i - 1)[1][0] -= 1;
-                            }
+                    for (int m = i; m < i + n; m++) {
+                        if (doc.contains(m)) {
+                            i_10[m-i]++;
+                        } else {
+                            i_00[m-i]++;
                         }
-
-                    } else {
-                        i_00++;
-                        for (Integer wordId : doc) {
-                            //if (wordId < i) iterator.remove();
-                            if (wordId > i) {
-                                doubles.get(wordId - i - 1)[0][1] += 1;
-                                doubles.get(wordId - i - 1)[0][0] -= 1;
+                    }
+                    for (Integer wordId : doc) {
+                        if (wordId <= i) continue;
+                        for (int m = i; m < i + n; m++) {
+                            if (doc.contains(m)) {
+                                if (wordId > m) {
+                                    i_nWord.get(m-i).get(wordId - m - 1)[1][1] += 1;
+                                    i_nWord.get(m-i).get(wordId - m - 1)[1][0] -= 1;
+                                }
+                            } else {
+                                if (wordId > m) {
+                                    i_nWord.get(m-i).get(wordId - m - 1)[0][1] += 1;
+                                    i_nWord.get(m-i).get(wordId - m - 1)[0][0] -= 1;
+                                }
                             }
                         }
                     }
                 }
-                for (double[][] aDouble : doubles) {
-                    aDouble[1][0] += i_10;
+                for (int j = 0; j <  n; j++) {
+                    for (double[][] aDouble : i_nWord.get(j)) {
+                        aDouble[1][0] += i_10[j];
+                    }
                 }
-                for (double[][] aDouble : doubles) {
-                    aDouble[0][0] += i_00;
+                for (int j = 0; j <  n; j++) {
+                    for (double[][] aDouble : i_nWord.get(j)) {
+                        aDouble[0][0] += i_00[j];
+                    }
                 }
-                //LOG.info("遍历 [{}] 花费时间： {} ",i, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                LOG.info("遍历DOCS完毕 [{}-{}] 花费时间： {}s ——————计算MI信息 ",i,i+n, stopwatch.elapsed(TimeUnit.SECONDS));
                 stopwatch.reset().start();
-                for (int j = 0; j < doubles.size(); j++) {
-                    StringBuilder sb = new StringBuilder();
-                    double[][] values = doubles.get(j);
-                    double mi = MI.MI(values);
-                    if (mi ==0) {
-                        continue;
+                for (int m = 0; m <  n; m++) {
+                    for (int j = 0; j < i_nWord.get(m).size(); j++) {
+                        StringBuilder sb = new StringBuilder();
+                        double[][] values = i_nWord.get(m).get(j);
+                        double mi = MI.MI(values);
+                        if (mi == 0) {
+                            continue;
+                        }
+                        sb.append(j + i + m + 1)
+                                .append("\t").append(mi)
+                                .append("\r\n");
+                        Files.append(sb, new File(savePath + "/" + (i+m)), Charset.defaultCharset());
+                        //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                     }
-                    sb.append(j + i + 1)
-                            .append("\t").append(mi)
-                            .append("\r\n");
-                    Files.append(sb, new File(savePath + "/" +i), Charset.defaultCharset());
-                    //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 }
-                //LOG.info("计算 [{}] MI花费时间： {} ",i, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                LOG.info("计算MI完毕 [{}-{}] MI花费时间： {}s ",i,i+n ,stopwatch.elapsed(TimeUnit.SECONDS));
                 return true;
             }
         }
         int runTimes = 0;
-        int thread = 64;
+        int thread = 32;
         int startWord = 0;
+        int n = 30;
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(thread));
         List<Future<Boolean>> futures = new ArrayList<>();
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        LOG.info("开始导入 0-{} 词", thread);
-        for (int i = 0; i < wordsA.length; i++) {
+        LOG.info("开始导入 0-{} 词", thread*n);
+        for ( int i = 0;i < wordsA.length; i += n){
             if (i < startWord) {
                 futures.add(service.submit(() -> true));
             } else {
-                futures.add(service.submit(new wordMICal(i)));
+                futures.add(service.submit(new wordMICal(i, n)));
             }
-            if (i < runTimes * thread + thread) {
+            if (i < (runTimes*thread*n+n*thread)) {
             } else {
+                LOG.info("等待处理：{} - {} " ,(i - n*thread), i);
                 for (Future<Boolean> future : futures) {
                     try {
                         future.get();
                     } catch (InterruptedException | ExecutionException e) {
                         LOG.error("任务出错！", e);
                     }
-
                 }
-                LOG.info("耗时{}s  {}-{}个词执行完毕 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), i - thread, i);
+                futures.clear();
+                LOG.info("{} - {} 个词执行完毕 耗时{}s 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), (i - n*thread), i);
                 for (Set<Integer> doc : docs) {
                     Iterator<Integer> iterator = doc.iterator();
                     while (iterator.hasNext()) {
                         Integer wordId = iterator.next();
                         if (wordId < i) iterator.remove();
+                        else break;
                     }
                 }
                 runTimes++;
-                LOG.info("开始导入第{}-{}个词 ！", i, i + thread);
+                LOG.info("开始导入第{}-{}个词 ！", i, i + n);
                 stopwatch.reset().start();
             }
         }
@@ -577,3 +597,4 @@ public class MIModel extends AbstractModel {
         //System.out.println(TF_IDF.class.getClassLoader().getResource( "conf/0" ));
     }
 }
+
