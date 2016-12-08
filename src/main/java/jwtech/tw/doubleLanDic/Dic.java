@@ -10,7 +10,9 @@ import java.util.Set;
  */
 public interface Dic {
     Set<String> getTransWordSet(String word);
+
     void addDicFile(String file)
             throws FileNotFoundException;
+
     void addDicFile(File file);
 }

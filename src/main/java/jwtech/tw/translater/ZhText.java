@@ -10,12 +10,12 @@ import org.ansj.splitWord.analysis.ToAnalysis;
 public class ZhText extends Text {
 
     ZhText(String text) {
-        super( "zh", text );
+        super("zh", text);
     }
 
     @Override
     public void genSeg() {
-        Result result =  ToAnalysis.parse(text);
+        Result result = ToAnalysis.parse(text);
         this.segText = result.toStringWithOutNature();
     }
 }

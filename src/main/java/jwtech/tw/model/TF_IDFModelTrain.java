@@ -17,6 +17,7 @@ import java.util.Map;
  */
 public class TF_IDFModelTrain {
     private static Logger LOG = LoggerFactory.getLogger(TF_IDFModelTrain.class);
+
     public static void trainFromFile(String filePath, String savePath)
             throws IOException {
         CountMap<String> wordDocNumMap = new CountMap<>();

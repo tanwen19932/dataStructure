@@ -18,7 +18,7 @@ import java.util.Scanner;
 public class DoubleArrayTrieTest extends TestCase {
     public void testExists() throws Exception {
         DoubleArrayTrie words = new DoubleArrayTrie();
-        DoubleArrayTrie arrayTrie= new DoubleArrayTrie();
+        DoubleArrayTrie arrayTrie = new DoubleArrayTrie();
         BufferedReader br = Files.newReader(new File("/Users/TW/ja_all/all"), Charset.forName("utf-8"));
         String line;
         int lineNum = 0;
@@ -33,16 +33,16 @@ public class DoubleArrayTrieTest extends TestCase {
             String[] pairs = line.split("\t");
             for (String pair : pairs) {
                 String key = pair.split(" ")[0];
-                    try {
-                        arrayTrie.Insert(key);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    arrayTrie.Insert(key);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 words.Insert(key);
                 //docSet.add(key);
             }
         }
-        for (String word :arrayTrie.GetAllChildWord(0)) {
+        for (String word : arrayTrie.GetAllChildWord(0)) {
             System.out.println(words.Exists(word));
         }
     }
@@ -52,15 +52,13 @@ public class DoubleArrayTrieTest extends TestCase {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("E:/兔子的试验学习中心[课内]/ACM大赛/ACM第四届校赛/E命令提示/words3.dic")));
         String s;
         int num = 0;
-        while((s=reader.readLine()) != null)
-        {
+        while ((s = reader.readLine()) != null) {
             words.add(s);
-            num ++;
+            num++;
         }
         DoubleArrayTrie dat = new DoubleArrayTrie();
 
-        for(String word: words)
-        {
+        for (String word : words) {
             dat.Insert(word);
         }
 
@@ -68,8 +66,7 @@ public class DoubleArrayTrieTest extends TestCase {
         System.out.println(dat.Tail.length);
 
         Scanner sc = new Scanner(System.in);
-        while(sc.hasNext())
-        {
+        while (sc.hasNext()) {
             String word = sc.next();
             System.out.println(dat.Exists(word));
             System.out.println(dat.FindAllWords(word));

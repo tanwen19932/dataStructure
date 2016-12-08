@@ -7,11 +7,13 @@ package jwtech.tw.doubleLanDic;
 public class JaZhDic
         extends AbstractDic {
     private static AbstractDic instance;
+
     public static synchronized void init() {
         if (instance == null) {
             instance = new JaZhDic();
         }
     }
+
     public static Dic getInstance() {
         if (instance == null) {
             init();
@@ -20,6 +22,6 @@ public class JaZhDic
     }
 
     private JaZhDic() {
-        super("data/dic/ja_zh.txt" );
+        super("data/dic/ja_zh.txt");
     }
 }

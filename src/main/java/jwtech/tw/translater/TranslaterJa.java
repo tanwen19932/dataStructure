@@ -50,14 +50,14 @@ public class TranslaterJa extends Translater {
         try {
             Preconditions.checkNotNull(wordSet);
         } catch (Exception e) {
-            LOG.error("{} 未找到合适词 用原词作为翻译 ",word);
+            LOG.error("{} 未找到合适词 用原词作为翻译 ", word);
             return word;
         }
         double max = -1;
         for (String temp : wordSet) {
             double tempTF_IDF = tf_idfModel.getWordTF_IDF(temp);
-            if ( tempTF_IDF> max) {
-                max =tempTF_IDF;
+            if (tempTF_IDF > max) {
+                max = tempTF_IDF;
                 result = temp;
             }
         }
@@ -65,18 +65,17 @@ public class TranslaterJa extends Translater {
     }
 
 
-
     public String getMulitWordTrans(Collection words) {
         StringBuilder sb = new StringBuilder();
         String[] wordsArray = (String[]) words.toArray(new String[words.size()]);
         String word = wordsArray[0];
         String word2 = wordsArray[1];
-        String[] pair ;
+        String[] pair;
         try {
             pair = miModel.getHighMIPair(dicFrom.getTransWordSet(word), dicFrom.getTransWordSet(word2));
         } catch (Exception e) {
-            LOG.error("中文组：{} {} 获得翻译词串错误逐个单词翻译",word,word2);
-            pair =  new String[2];
+            LOG.error("中文组：{} {} 获得翻译词串错误逐个单词翻译", word, word2);
+            pair = new String[2];
             pair[0] = getSingleTransWord(word);
             pair[1] = getSingleTransWord(word2);
         }
@@ -88,8 +87,8 @@ public class TranslaterJa extends Translater {
             try {
                 pair2 = miModel.getHighMIPair(lastTransWord, dicFrom.getTransWordSet(wordsArray[i]));
             } catch (Exception e) {
-                LOG.error("{} 与中文：{} 未找到合适MI信息 按照单个词翻译 ",lastTransWord,wordsArray[i]);
-                pair2 =  new String[2];
+                LOG.error("{} 与中文：{} 未找到合适MI信息 按照单个词翻译 ", lastTransWord, wordsArray[i]);
+                pair2 = new String[2];
                 pair2[1] = getSingleTransWord(word2);
             }
             sb.append(pair2[1]);

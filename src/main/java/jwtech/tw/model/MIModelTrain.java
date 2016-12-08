@@ -27,6 +27,7 @@ public class MIModelTrain {
     private static final String miModelDir = "data/mi/ja_mi";
 
     private static Logger LOG = LoggerFactory.getLogger(MIModelTrain.class);
+
     //模型训练
     public static void step1(String filePath, String savePath) throws IOException {
         //存储字典
@@ -94,15 +95,15 @@ public class MIModelTrain {
         LOG.info(" 开始导入模型------ ");
         darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();
         totalTrie.open(dicDir);
-        LOG.info(" 词语Trie模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOG.info(" 词语Trie模型导入成功 耗时{}ms------ ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         ObjectInputStream ois2 = new ObjectInputStream(new FileInputStream(wordsDir));
         String[] wordsA = (String[]) ois2.readObject();
         ois2.close();
-        LOG.info(" 词语数组[]模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOG.info(" 词语数组[]模型导入成功 耗时{}ms------ ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         ObjectInputStream ois = new ObjectInputStream(new FileInputStream(docsDir));
         List<String> docsStr = (List<String>) ois.readObject();
         ois.close();
-        LOG.info(" 文档模型导入成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOG.info(" 文档模型导入成功 耗时{}ms------ ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         List<Set<Integer>> docs = new ArrayList<>();
         for (String docStr : docsStr) {
             Set<Integer> doc = new TreeSet<>();
@@ -115,7 +116,7 @@ public class MIModelTrain {
             docs.add(doc);
         }
         System.gc();
-        LOG.info(" 文档模型处理成功 耗时{}ms------ ",stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOG.info(" 文档模型处理成功 耗时{}ms------ ", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         class wordMICal implements Callable<Boolean> {
             private int i;
             private int n;
@@ -137,15 +138,15 @@ public class MIModelTrain {
                     }
                     i_nWord.add(doubles);
                 }
-                LOG.info("{}- {} 创建存放doc信息数组成功 耗时{}ms ———————— 准备遍历DOCS",i ,i+n,stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                LOG.info("{}- {} 创建存放doc信息数组成功 耗时{}ms ———————— 准备遍历DOCS", i, i + n, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 int[] i_10 = new int[n];
                 int[] i_00 = new int[n];
                 for (Set<Integer> doc : docs) {
                     for (int m = i; m < i + n; m++) {
                         if (doc.contains(m)) {
-                            i_10[m-i]++;
+                            i_10[m - i]++;
                         } else {
-                            i_00[m-i]++;
+                            i_00[m - i]++;
                         }
                     }
                     for (Integer wordId : doc) {
@@ -153,31 +154,31 @@ public class MIModelTrain {
                         for (int m = i; m < i + n; m++) {
                             if (doc.contains(m)) {
                                 if (wordId > m) {
-                                    i_nWord.get(m-i).get(wordId - m - 1)[1][1] += 1;
-                                    i_nWord.get(m-i).get(wordId - m - 1)[1][0] -= 1;
+                                    i_nWord.get(m - i).get(wordId - m - 1)[1][1] += 1;
+                                    i_nWord.get(m - i).get(wordId - m - 1)[1][0] -= 1;
                                 }
                             } else {
                                 if (wordId > m) {
-                                    i_nWord.get(m-i).get(wordId - m - 1)[0][1] += 1;
-                                    i_nWord.get(m-i).get(wordId - m - 1)[0][0] -= 1;
+                                    i_nWord.get(m - i).get(wordId - m - 1)[0][1] += 1;
+                                    i_nWord.get(m - i).get(wordId - m - 1)[0][0] -= 1;
                                 }
                             }
                         }
                     }
                 }
-                for (int j = 0; j <  n; j++) {
+                for (int j = 0; j < n; j++) {
                     for (double[][] aDouble : i_nWord.get(j)) {
                         aDouble[1][0] += i_10[j];
                     }
                 }
-                for (int j = 0; j <  n; j++) {
+                for (int j = 0; j < n; j++) {
                     for (double[][] aDouble : i_nWord.get(j)) {
                         aDouble[0][0] += i_00[j];
                     }
                 }
-                LOG.info("遍历DOCS完毕 [{}-{}] 花费时间： {}s ——————计算MI信息 ",i,i+n, stopwatch.elapsed(TimeUnit.SECONDS));
+                LOG.info("遍历DOCS完毕 [{}-{}] 花费时间： {}s ——————计算MI信息 ", i, i + n, stopwatch.elapsed(TimeUnit.SECONDS));
                 stopwatch.reset().start();
-                for (int m = 0; m <  n; m++) {
+                for (int m = 0; m < n; m++) {
                     for (int j = 0; j < i_nWord.get(m).size(); j++) {
                         StringBuilder sb = new StringBuilder();
                         double[][] values = i_nWord.get(m).get(j);
@@ -188,11 +189,11 @@ public class MIModelTrain {
                         sb.append(j + i + m + 1)
                                 .append("\t").append(mi)
                                 .append("\r\n");
-                        Files.append(sb, new File(savePath + "/" + (i+m)), Charset.defaultCharset());
+                        Files.append(sb, new File(savePath + "/" + (i + m)), Charset.defaultCharset());
                         //LOG.info("处理到 {}->{}  word:{}+{} MI:{}  耗时：{}", i, j + i + 1, wordsA[i], wordsA[j + i + 1], mi, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                     }
                 }
-                LOG.info("计算MI完毕 [{}-{}] MI花费时间： {}s ",i,i+n ,stopwatch.elapsed(TimeUnit.SECONDS));
+                LOG.info("计算MI完毕 [{}-{}] MI花费时间： {}s ", i, i + n, stopwatch.elapsed(TimeUnit.SECONDS));
                 return true;
             }
         }
@@ -202,16 +203,16 @@ public class MIModelTrain {
         int n = 3;
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(thread));
         List<Future<Boolean>> futures = new ArrayList<>();
-        LOG.info("开始导入 0-{} 词", thread*n);
-        for ( int i = 0;i < wordsA.length; i += n){
+        LOG.info("开始导入 0-{} 词", thread * n);
+        for (int i = 0; i < wordsA.length; i += n) {
             if (i < startWord) {
                 futures.add(service.submit(() -> true));
             } else {
                 futures.add(service.submit(new wordMICal(i, n)));
             }
-            if (i < (runTimes*thread*n+n*thread)) {
+            if (i < (runTimes * thread * n + n * thread)) {
             } else {
-                LOG.info("等待处理：{} - {} " ,(i - n*thread), i);
+                LOG.info("等待处理：{} - {} ", (i - n * thread), i);
                 for (Future<Boolean> future : futures) {
                     try {
                         future.get();
@@ -220,7 +221,7 @@ public class MIModelTrain {
                     }
                 }
                 futures.clear();
-                LOG.info("{} - {} 个词执行完毕 耗时{}s 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), (i - n*thread), i);
+                LOG.info("{} - {} 个词执行完毕 耗时{}s 准备删除docs中无用数据", stopwatch.elapsed(TimeUnit.SECONDS), (i - n * thread), i);
                 for (Set<Integer> doc : docs) {
                     Iterator<Integer> iterator = doc.iterator();
                     while (iterator.hasNext()) {
@@ -309,7 +310,8 @@ public class MIModelTrain {
     //    }
     //}
 
-    public static void step4() {}
+    public static void step4() {
+    }
 
     public static void trainFromFile3(String filePath, String savePath) throws IOException {
         darts.DoubleArrayTrie totalTrie = new darts.DoubleArrayTrie();

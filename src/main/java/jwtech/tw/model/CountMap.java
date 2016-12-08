@@ -9,25 +9,26 @@ import java.util.TreeMap;
  */
 public class CountMap<T>
         extends TreeMap<T, Long> {
-    public CountMap(){
+    public CountMap() {
     }
+
     public void add(CountMap<T> otherMap) {
         for (Map.Entry<T, Long> entry : otherMap.entrySet()) {
-            add( entry.getKey(),entry.getValue() );
+            add(entry.getKey(), entry.getValue());
         }
     }
 
     public void add(T key) {
-        add( key, 1 );
+        add(key, 1);
     }
 
     public void add(T key, long value) {
-        if (this.containsKey( key )) {
-            long now = this.get( key );
+        if (this.containsKey(key)) {
+            long now = this.get(key);
             long then = now + value;
-            this.put( key, then );
+            this.put(key, then);
         } else {
-            this.put( key, value );
+            this.put(key, value);
         }
     }
 

@@ -9,7 +9,7 @@ import java.util.Map;
  * @date Administrator on 2016/11/22.
  */
 public class DATTrie {
-    static final char ENDSTATE='\0';
+    static final char ENDSTATE = '\0';
     int[] base;
     int[] check;
     Map<Character, Integer> charMap = new HashMap<>();
@@ -33,9 +33,9 @@ public class DATTrie {
         int state = base[1];
 
         for (char ch : word.toCharArray()) {
-            int t = base[state+ch];
-            if(check[t]==0){
-                check[t]=state;
+            int t = base[state + ch];
+            if (check[t] == 0) {
+                check[t] = state;
             }
         }
     }
@@ -44,17 +44,16 @@ public class DATTrie {
         int state = base[1];
         char last = 0;
         for (char ch : word.toCharArray()) {
-           int t = base[state+ch];
-           if(check[t]==state){
-               if(t == ENDSTATE){
-                   return state;
-               }
-               state = t;
-               continue;
-           }
-           else {
-               return -1;
-           }
+            int t = base[state + ch];
+            if (check[t] == state) {
+                if (t == ENDSTATE) {
+                    return state;
+                }
+                state = t;
+                continue;
+            } else {
+                return -1;
+            }
         }
         return -1;
     }

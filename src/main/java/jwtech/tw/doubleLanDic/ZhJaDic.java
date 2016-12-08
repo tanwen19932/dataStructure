@@ -40,8 +40,8 @@ public class ZhJaDic
                     String ja = line.split("\\|")[0].trim();
                     String zhs = line.split("\\|")[1].trim();
                     for (String zh : zhs.split("[\\p{Punct} ；：;:'\"]")) {
-                        if (zh.trim().length() > 0){
-                            zh= zh.replaceAll("[\\(（].*?[）\\)]","").replaceAll("\\s*","").trim();
+                        if (zh.trim().length() > 0) {
+                            zh = zh.replaceAll("[\\(（].*?[）\\)]", "").replaceAll("\\s*", "").trim();
                             addPair(zh, ja);
                         }
                     }

@@ -21,11 +21,12 @@ public abstract class AbstractModel {
         String line;
         int lineNum = 0;
         while ((line = br.readLine()) != null) {
-            LOG.debug("读取到：第"+lineNum);
-            if(line.trim().length()==0) continue;
+            LOG.debug("读取到：第" + lineNum);
+            if (line.trim().length() == 0) continue;
             handleLine(line);
         }
         br.close();
     }
+
     abstract public void handleLine(String line);
 }

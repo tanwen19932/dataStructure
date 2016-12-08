@@ -19,7 +19,7 @@ import java.util.TreeSet;
  */
 public class DoubleArrayTrieTest extends TestCase {
     public void testBuild() throws Exception {
-       DoubleArrayTrie totalTrie= new DoubleArrayTrie();
+        DoubleArrayTrie totalTrie = new DoubleArrayTrie();
         Set<String> words = new TreeSet<>();
         BufferedReader br = Files.newReader(new File("/Users/TW/ja_all/all"), Charset.forName("utf-8"));
         String line;
@@ -45,7 +45,7 @@ public class DoubleArrayTrieTest extends TestCase {
             //docs.add(trie);
         }
         br.close();
-        String[] wordsA =  words.toArray(new String[words.size()]);
+        String[] wordsA = words.toArray(new String[words.size()]);
         totalTrie.build((Lists.newArrayList(wordsA)));
         List<Set<Integer>> docs = new ArrayList<>();
         br = Files.newReader(new File("/Users/TW/ja_all/all"), Charset.forName("utf-8"));
@@ -73,11 +73,11 @@ public class DoubleArrayTrieTest extends TestCase {
                     int y = 0;
                     try {
                         if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) x = 1;
-                    }catch (Exception e){
+                    } catch (Exception e) {
                     }
                     try {
                         if (doc.contains(totalTrie.exactMatchSearch(wordsA[i]))) y = 1;
-                    }catch (Exception e){
+                    } catch (Exception e) {
                     }
                     values[x][y] += 1;
                 }

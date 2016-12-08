@@ -6,7 +6,7 @@ package jwtech.tw.translater;
  */
 public class TranslaterFactory {
     public static Translater getTranslater(String lanCodeFrom, String lanCodeTo) {
-        if (lanCodeTo.equals( "ja" )) {
+        if (lanCodeTo.equals("ja")) {
             return new TranslaterJa();
         }
         return null;

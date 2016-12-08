@@ -22,6 +22,7 @@ public abstract class AbstractDic
     private static Logger LOG = LoggerFactory.getLogger(AbstractDic.class);
     Map<String, Set<String>> dicMap = new ConcurrentHashMap<>();
     String dicFilePath = null;
+
     private AbstractDic() {
         try {
             addDicFile(dicFilePath);
@@ -83,13 +84,14 @@ public abstract class AbstractDic
 
     public void addPair(String word, Set<String> transWords) {
         if (dicMap.containsKey(word)) {
-            for(String transWord: transWords){
+            for (String transWord : transWords) {
                 dicMap.get(word).add(transWord);
             }
         } else {
             dicMap.put(word, transWords);
         }
     }
+
     public void addPair(String word, String transWord) {
         if (dicMap.containsKey(word)) {
             dicMap.get(word).add(transWord);

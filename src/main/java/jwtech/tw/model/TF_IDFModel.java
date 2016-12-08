@@ -21,7 +21,7 @@ public class TF_IDFModel extends AbstractModel {
         try {
             loadFromFile(modelPath);
         } catch (IOException e) {
-            LOG.error("初始化模型失败 检测路径:{}",modelPath);
+            LOG.error("初始化模型失败 检测路径:{}", modelPath);
         }
     }
 

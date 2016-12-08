@@ -18,29 +18,29 @@ public class SegGet {
             throws IOException {
         Map<String, Pair<Integer, Integer>> wordMap = new TreeMap<>();
 
-        for (String line : Files.readLines( new File( "0" ), Charset.forName( "utf-8" ) )) {
-            String[] words = line.split( "\\s" );
+        for (String line : Files.readLines(new File("0"), Charset.forName("utf-8"))) {
+            String[] words = line.split("\\s");
             for (String word : words) {
-                word = word.replaceAll( "[,.，。、]","" ).trim();
-                word = word.replaceAll( "\\p{Punct}", "" ).trim();
-                word = word.replaceAll( "\\pP","" ).trim();
-                word = word.replaceAll( "\\p{P}","" ).trim();
+                word = word.replaceAll("[,.，。、]", "").trim();
+                word = word.replaceAll("\\p{Punct}", "").trim();
+                word = word.replaceAll("\\pP", "").trim();
+                word = word.replaceAll("\\p{P}", "").trim();
                 word = word.replaceAll("[\\pP‘’“”]", "").trim();
-                if(word.replaceAll( "","" ).trim().length()==0){
+                if (word.replaceAll("", "").trim().length() == 0) {
                     continue;
                 }
-                if (wordMap.containsKey( word )) {
-                    Pair<Integer, Integer> pair = wordMap.get( word );
+                if (wordMap.containsKey(word)) {
+                    Pair<Integer, Integer> pair = wordMap.get(word);
                     Integer a = pair.a;
-                    Integer aNew = new Integer( a.intValue() + 1 );
-                    wordMap.put( word, new Pair<>( aNew, 1 ) );
+                    Integer aNew = new Integer(a.intValue() + 1);
+                    wordMap.put(word, new Pair<>(aNew, 1));
                 } else {
-                    wordMap.put( word, new Pair<>( 1, 1 ) );
+                    wordMap.put(word, new Pair<>(1, 1));
                 }
             }
         }
-        for (Map.Entry entry : wordMap.entrySet()){
-            System.out.println(entry.getKey() + " = " +  entry.getValue());
+        for (Map.Entry entry : wordMap.entrySet()) {
+            System.out.println(entry.getKey() + " = " + entry.getValue());
         }
     }
 }
